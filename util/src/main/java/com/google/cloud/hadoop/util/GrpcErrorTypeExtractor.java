@@ -30,7 +30,8 @@ public class GrpcErrorTypeExtractor implements ErrorTypeExtractor {
   private static final String BUCKET_ALREADY_EXISTS_MESSAGE =
       "FAILED_PRECONDITION: Your previous request to create the named bucket succeeded and you already own it.";
 
-  private GrpcErrorTypeExtractor() {}
+  private GrpcErrorTypeExtractor() {
+  }
 
   @Override
   public ErrorType getErrorType(Exception error) {
@@ -51,12 +52,11 @@ public class GrpcErrorTypeExtractor implements ErrorTypeExtractor {
   @Override
   public boolean bucketAlreadyExists(Exception e) {
     ErrorType errorType = getErrorType(e);
-    if (errorType == ErrorType.ALREADY_EXISTS) {
+    if (errorType == ErrorType.ALREADY_EXISTS)
       return true;
-    }
-    // The gRPC API currently throws a FAILED_PRECONDITION status code instead of ALREADY_EXISTS,
-    // so we handle both these conditions in the interim.
-    // TODO: remove once the status codes are fixed.
+      // The gRPC API currently throws a FAILED_PRECONDITION status code instead of ALREADY_EXISTS,
+      // so we handle both these conditions in the interim. This can be removed once the status codes
+      // are fixed.
     else if (errorType == ErrorType.FAILED_PRECONDITION) {
       StatusRuntimeException statusRuntimeException = getStatusRuntimeException(e);
       return statusRuntimeException != null
@@ -65,19 +65,17 @@ public class GrpcErrorTypeExtractor implements ErrorTypeExtractor {
     return false;
   }
 
-  /** Extracts StatusRuntimeException from the Exception, if it exists. */
+  /**
+   * Extracts StatusRuntimeException from the Exception, if it exists.
+   */
   @Nullable
   private StatusRuntimeException getStatusRuntimeException(Exception e) {
     Throwable cause = e;
-    // Keeping a counter to break early from the loop to avoid infinite loop condition due to
-    // cyclic exception chains.
-    int currentExceptionDepth = 0, maxChainDepth = 1000;
-    while (cause != null && currentExceptionDepth < maxChainDepth) {
+    while (cause != null) {
       if (cause instanceof StatusRuntimeException) {
         return (StatusRuntimeException) cause;
       }
       cause = cause.getCause();
-      currentExceptionDepth++;
     }
     return null;
   }
