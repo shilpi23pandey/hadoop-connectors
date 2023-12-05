@@ -2,6 +2,7 @@ package com.google.cloud.hadoop.gcsio;
 
 import static com.google.cloud.hadoop.gcsio.GoogleCloudStorageFileSystemImpl.getFromFuture;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.FutureCallback;
@@ -33,7 +34,12 @@ public class GrpcManualBatchExecutor {
 
   private final Queue<Future<Void>> responseFutures = new ConcurrentLinkedQueue<>();
 
-  GrpcManualBatchExecutor(int numThreads) {
+  public GrpcManualBatchExecutor(int numThreads) {
+    this.requestsExecutor =
+        numThreads == 0 ? newDirectExecutorService() : newRequestExecutor(numThreads);
+  }
+
+  private static ExecutorService newRequestExecutor(int numThreads) {
     ThreadPoolExecutor executor =
         new ThreadPoolExecutor(
             /* corePoolSize= */ numThreads,
@@ -47,7 +53,7 @@ public class GrpcManualBatchExecutor {
                 .build());
     executor.allowCoreThreadTimeOut(true);
     executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-    this.requestsExecutor = executor;
+    return executor;
   }
 
   /** Adds a task to the execution queue. */

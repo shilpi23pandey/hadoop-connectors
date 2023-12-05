@@ -261,7 +261,14 @@ public class GoogleCloudStorageClientImpl extends ForwardingGoogleCloudStorage {
           new FutureCallback<>() {
             @Override
             public void onSuccess(Blob blob) {
-              Long generation = checkNotNull(blob.getGeneration(), "generation can not be null");
+              if (blob == null) {
+                // Denotes that the item cannot be found.
+                // If the item isn't found, treat it the same as if it's not found
+                // in the delete case: assume the user wanted the object gone, and now it is.
+                logger.atFiner().log("deleteObjects(%s): get not found:%n", resourceId);
+                return;
+              }
+              long generation = checkNotNull(blob.getGeneration(), "generation can not be null");
               grpcManualBatchExecutor.queue(
                   () ->
                       storage.delete(
@@ -273,17 +280,9 @@ public class GoogleCloudStorageClientImpl extends ForwardingGoogleCloudStorage {
 
             @Override
             public void onFailure(Throwable throwable) {
-              if (throwable instanceof Exception
-                  && errorExtractor.getErrorType((Exception) throwable) == ErrorType.NOT_FOUND) {
-                // If the item isn't found, treat it the same as if it's not found
-                // in the delete case: assume the user wanted the object gone, and now it is.
-                logger.atFiner().log(
-                    "deleteObjects(%s): get not found:%n%s", resourceId, throwable);
-              } else {
-                innerExceptions.add(
-                    new IOException(
-                        String.format("Error deleting %s, stage 1", resourceId), throwable));
-              }
+              innerExceptions.add(
+                  new IOException(
+                      String.format("Error deleting %s, stage 1", resourceId), throwable));
             }
           });
     }
