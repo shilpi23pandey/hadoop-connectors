@@ -28,10 +28,6 @@ public final class MockStorage extends StorageImplBase {
     responses.add(response);
   }
 
-  public void setResponses(List<AbstractMessage> responses) {
-    this.responses = new LinkedList<java.lang.Object>(responses);
-  }
-
   public void addException(Exception exception) {
     responses.add(exception);
   }
