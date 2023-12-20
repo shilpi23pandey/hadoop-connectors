@@ -1736,6 +1736,8 @@ public class GoogleCloudStorageTest {
   }
 
   /** Test argument sanitization for GoogleCloudStorage.create(String). */
+
+
   @Test
   public void testCreateBucketIllegalArguments() throws IOException {
     GoogleCloudStorage gcs = mockedGcsImpl(HTTP_TRANSPORT);
